@@ -8,9 +8,9 @@ import { Table } from '../components/ui/Table';
 import { CaseStatusBadge, VerificationBadge, Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
-import { Modal } from '../components/ui/Modal';
 import { Timeline } from '../components/ui/Timeline';
-import { Field, Input, Select, Textarea } from '../components/ui/FormControls';
+import { NewCaseModal } from '../components/workflows/NewCaseModal';
+import { Field, Input, Select } from '../components/ui/FormControls';
 import { institutionCaseSummary, relationsForCase, isCaseOverdue } from '../utils/metrics';
 import {
   CASE_STATUS_LIST,
@@ -401,149 +401,14 @@ export function InstitutionDetail({ institutionId }) {
         open={newCaseOpen}
         institution={institution}
         bureaus={bureaus}
+        sourceLabel="Institution 360"
         onClose={() => setNewCaseOpen(false)}
         onCreate={(fields) => {
-          const created = createCase({ ...fields, institutionId: institution.institutionId });
+          const created = createCase(fields);
           setNewCaseOpen(false);
           navigate('case', { caseId: created.caseId });
         }}
       />
     </div>
-  );
-}
-
-function NewCaseModal({ open, institution, bureaus, onClose, onCreate }) {
-  const empty = {
-    subject: '',
-    category: '',
-    bureauId: bureaus[0]?.bureauId || '',
-    assignedOfficer: '',
-    dueAt: '',
-    description: '',
-    nextAction: '',
-  };
-  const [form, setForm] = useState(empty);
-  const [errors, setErrors] = useState({});
-
-  function set(key, value) {
-    setForm((f) => ({ ...f, [key]: value }));
-  }
-
-  function validate() {
-    const next = {};
-    if (!form.subject.trim()) next.subject = 'Subject is required.';
-    if (!form.category) next.category = 'Choose a category.';
-    if (!form.bureauId) next.bureauId = 'Choose a responsible bureau.';
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  }
-
-  function submit() {
-    if (!validate()) return;
-    onCreate({
-      subject: form.subject.trim(),
-      category: form.category,
-      bureauId: form.bureauId,
-      assignedOfficer: form.assignedOfficer.trim() || 'Unassigned (Demo)',
-      description: form.description.trim(),
-      nextAction: form.nextAction.trim() || 'Await triage',
-      dueAt: form.dueAt ? new Date(`${form.dueAt}T12:00:00`).toISOString() : undefined,
-      initialRemarks: `Case logged from Institution 360 — ${institution.name}.`,
-    });
-    setForm(empty);
-    setErrors({});
-  }
-
-  function handleAfterClose() {
-    setForm(empty);
-    setErrors({});
-    onClose();
-  }
-
-  return (
-    <Modal
-      open={open}
-      title="New case"
-      description={`Log a fictional complaint case for ${institution.name}.`}
-      onClose={handleAfterClose}
-      size="lg"
-      footer={
-        <>
-          <Button variant="ghost" onClick={handleAfterClose}>
-            Cancel
-          </Button>
-          <Button onClick={submit}>Create case</Button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <Field label="Subject" htmlFor="nc-subject" hint="A short, fictional summary of the complaint.">
-          <Input
-            id="nc-subject"
-            value={form.subject}
-            onChange={(e) => set('subject', e.target.value)}
-            placeholder="e.g. Renewal documentation query"
-            aria-invalid={Boolean(errors.subject)}
-          />
-          {errors.subject ? <p className="mt-1 text-xs text-rose-600">{errors.subject}</p> : null}
-        </Field>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Category" htmlFor="nc-category">
-            <Select id="nc-category" value={form.category} onChange={(e) => set('category', e.target.value)}>
-              <option value="">Select category…</option>
-              {CASE_CATEGORY_LIST.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-            {errors.category ? <p className="mt-1 text-xs text-rose-600">{errors.category}</p> : null}
-          </Field>
-          <Field label="Responsible bureau / cell" htmlFor="nc-bureau">
-            <Select id="nc-bureau" value={form.bureauId} onChange={(e) => set('bureauId', e.target.value)}>
-              {bureaus.map((b) => (
-                <option key={b.bureauId} value={b.bureauId}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
-            {errors.bureauId ? <p className="mt-1 text-xs text-rose-600">{errors.bureauId}</p> : null}
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Assigned officer" htmlFor="nc-officer" hint="Optional. Defaults to Unassigned.">
-            <Input
-              id="nc-officer"
-              value={form.assignedOfficer}
-              onChange={(e) => set('assignedOfficer', e.target.value)}
-              placeholder="e.g. A. Menon (Demo)"
-            />
-          </Field>
-          <Field label="Due date" htmlFor="nc-due" hint="Optional target date for action.">
-            <Input id="nc-due" type="date" value={form.dueAt} onChange={(e) => set('dueAt', e.target.value)} />
-          </Field>
-        </div>
-
-        <Field label="Description" htmlFor="nc-desc">
-          <Textarea
-            id="nc-desc"
-            value={form.description}
-            onChange={(e) => set('description', e.target.value)}
-            placeholder="Fictional case details…"
-          />
-        </Field>
-
-        <Field label="Next action" htmlFor="nc-next" hint="Optional. Defaults to “Await triage”.">
-          <Input
-            id="nc-next"
-            value={form.nextAction}
-            onChange={(e) => set('nextAction', e.target.value)}
-            placeholder="e.g. Route to inspection cell"
-          />
-        </Field>
-      </div>
-    </Modal>
   );
 }

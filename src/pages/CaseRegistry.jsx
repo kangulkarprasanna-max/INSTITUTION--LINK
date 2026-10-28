@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight, Plus } from 'lucide-react';
 import { useData } from '../hooks/useData';
 import { useNav } from '../hooks/navigation';
 import { PageTitle, Card } from '../components/ui/Typography';
@@ -8,6 +8,7 @@ import { CaseStatusBadge } from '../components/ui/Badge';
 import { Field, Input, Select } from '../components/ui/FormControls';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { NewCaseModal } from '../components/workflows/NewCaseModal';
 import {
   CASE_STATUS_LIST,
   CASE_CATEGORY_LIST,
@@ -30,10 +31,20 @@ function toTime(iso) {
 }
 
 export function CaseRegistry() {
-  const { getCases, getBureaus, institutionById, bureauById } = useData();
+  const {
+    getCases,
+    getBureaus,
+    getInstitutions,
+    institutionById,
+    bureauById,
+    createCase,
+  } = useData();
   const { navigate } = useNav();
   const cases = getCases();
   const bureaus = getBureaus();
+  const institutions = getInstitutions();
+
+  const [newCaseOpen, setNewCaseOpen] = useState(false);
 
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
@@ -96,6 +107,11 @@ export function CaseRegistry() {
       <PageTitle
         title="Case Registry"
         subtitle="Search, filter and open complaint cases in the shared demonstration dataset."
+        actions={
+          <Button icon={Plus} onClick={() => setNewCaseOpen(true)}>
+            New case
+          </Button>
+        }
       />
 
       <Card>
@@ -258,6 +274,19 @@ export function CaseRegistry() {
           />
         </Card>
       )}
+
+      <NewCaseModal
+        open={newCaseOpen}
+        institutions={institutions}
+        bureaus={bureaus}
+        sourceLabel="Case Registry"
+        onClose={() => setNewCaseOpen(false)}
+        onCreate={(fields) => {
+          const created = createCase(fields);
+          setNewCaseOpen(false);
+          navigate('case', { caseId: created.caseId });
+        }}
+      />
     </div>
   );
 }
